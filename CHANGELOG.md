@@ -5,6 +5,14 @@ This project adheres to [Semantic Versioning](http://semver.org/) for
 official project tracking. For technical reasons, the module version
 number cannot be expressed using Semantic Versioning.
 
+## 2.0.0-0 - Unreleased
+
+### Changes
+
+- Module updated to support PowerShell v6 and its built-in SemanticVersion type.
+- New-SemanticVersion: Outputs System.Management.Automation.SemanticVersion instead of custom type.
+- Step-SemanticVersion: Outputs System.Management.Automation.SemanticVersion instead of custom type.
+
 ## 1.5.1 - 2018-03-26
 
 ### Fixes

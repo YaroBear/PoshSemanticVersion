@@ -114,12 +114,12 @@ function Compare-SemanticVersion {
     )
 
     begin {
-        $refVer = New-SemanticVersion -InputObject $ReferenceVersion.ToString()
+        $refVer = New-SemVerObject -InputObject $ReferenceVersion.ToString()
     }
 
     process {
         foreach ($item in $DifferenceVersion) {
-            $difVer = New-SemanticVersion -InputObject $item.ToString()
+            $difVer = New-SemVerObject -InputObject $item.ToString()
 
             [int] $precedence = $refVer.CompareTo($difVer)
 
@@ -149,11 +149,6 @@ function Compare-SemanticVersion {
             $result.psobject.Members.Add([Activator]::CreateInstance([System.Management.Automation.PSNoteProperty], @(
                 'IsCompatible',
                 $refVer.CompatibleWith($difVer)
-            )))
-            $result.psobject.Members.Add([Activator]::CreateInstance([System.Management.Automation.PSAliasProperty], @(
-                #TODO: Deprecate: This should read "IsCompatible", not "AreCompatible".
-                'AreCompatible',
-                'IsCompatible'
             )))
 
             $result.pstypenames.Insert(0, 'PoshSemanticVersionComparison')

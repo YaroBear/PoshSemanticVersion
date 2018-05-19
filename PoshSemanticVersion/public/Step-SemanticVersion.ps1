@@ -66,7 +66,7 @@ function Step-SemanticVersion {
     #>
     [CmdletBinding()]
     [Alias('stsemver')]
-    [OutputType('PoshSemanticVersion')]
+    [OutputType([System.Management.Automation.SemanticVersion])]
     param (
         # The Semantic Version number to be incremented.
         [Parameter(Mandatory=$true,
@@ -103,7 +103,7 @@ function Step-SemanticVersion {
         $Label
     )
 
-    $newSemVer = New-SemanticVersion -InputObject $InputObject
+    $newSemVer = New-SemVerObject -InputObject $InputObject
 
     if ($PSBoundParameters.ContainsKey('Label')) {
         try {
@@ -122,7 +122,9 @@ function Step-SemanticVersion {
         $newSemVer.Increment($Type)
     }
 
-    $newSemVer
+    #BUG: PowerShell SemanticVersion implementation does not parse a semver string that has a build label
+    # without a pre-release label.
+    [System.Management.Automation.SemanticVersion]::new($newSemVer.Major, $newSemVer.Minor, $newSemVer.Patch, (@($newSemVer.PreRelease) -join '.'), (@($newSemVer.Build) -join '.'))
 }
 
 

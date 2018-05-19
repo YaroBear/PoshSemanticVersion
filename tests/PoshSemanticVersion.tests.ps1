@@ -17,14 +17,10 @@
         2.0.0   2.0.1-0    2.0.1-0  2.1.0-0  3.0.0-0  2.0.1  2.1.0  3.0.0
 #>
 
-
-
 param (
     [string]
     $ModuleName = 'PoshSemanticVersion'
 )
-
-#Import-Module -Name "..\$moduleName"
 
 InModuleScope $moduleName {
     Describe 'New-SemanticVersion' {
@@ -40,8 +36,8 @@ InModuleScope $moduleName {
             $semver.Major | Should Be $inputMajor
             $semver.Minor | Should Be $inputMinor
             $semver.Patch | Should Be $inputPatch
-            $semver.PreRelease | Should Be $inputPreRelease
-            $semver.Build | Should Be $inputBuild
+            $semver.PreReleaseLabel | Should Be $inputPreRelease
+            $semver.BuildLabel | Should Be $inputBuild
         }
 
         It 'Creates an object using an input string' {
@@ -57,8 +53,8 @@ InModuleScope $moduleName {
             $semver.Major | Should Be $inputMajor
             $semver.Minor | Should Be $inputMinor
             $semver.Patch | Should Be $inputPatch
-            $semver.PreRelease | Should Be $inputPreRelease
-            $semver.Build | Should Be $inputBuild
+            $semver.PreReleaseLabel | Should Be $inputPreRelease
+            $semver.BuildLabel | Should Be $inputBuild
         }
 
         It 'Accepts arrays for PreRelease and Build parameters' {
@@ -67,14 +63,14 @@ InModuleScope $moduleName {
 
             $semver = New-SemanticVersion -Major 2 -Minor 3 -Patch 4 -PreRelease $inputPreRelease -Build $inputBuild
 
-            $semver.PreRelease | Should Be ($inputPreRelease -join '.')
-            $semver.Build | Should Be ($inputBuild -join '.')
+            $semver.PreReleaseLabel | Should Be ($inputPreRelease -join '.')
+            $semver.BuildLabel | Should Be ($inputBuild -join '.')
         }
 
-        It 'Outputs a ''PoshSemanticVersion'' object' {
+        It 'Outputs a [System.Management.Automation.SemanticVersion] object' {
             $semver = New-SemanticVersion -String '1.2.3'
 
-            @($semver.psobject.TypeNames) -contains 'PoshSemanticVersion' | Should Be $true
+            $semver -is [System.Management.Automation.SemanticVersion] | Should Be $true
         }
 
         It 'Accepts pipeline input' {
@@ -85,10 +81,6 @@ InModuleScope $moduleName {
             New-SemanticVersion '1.2.3-a.1+b.2' | Should Not BeNullOrEmpty
         }
 
-        It 'Fails without input' {
-            {New-SemanticVersion $null} | Should Throw
-        }
-
         It 'Converts a valid semantic version string into a semantic version object' {
             $semVerString = '1.2.3-alpha.test.1.2.3+build.it.test.01.02.4'
 
@@ -97,8 +89,18 @@ InModuleScope $moduleName {
             $semver.Major | Should Be 1
             $semver.Minor | Should Be 2
             $semver.Patch | Should Be 3
-            $semver.PreRelease | Should Be 'alpha.test.1.2.3'
-            $semver.Build | Should Be 'build.it.test.01.02.4'
+            $semver.PreReleaseLabel | Should Be 'alpha.test.1.2.3'
+            $semver.BuildLabel | Should Be 'build.it.test.01.02.4'
+        }
+
+        It 'Throws if the InputObject.ToString() is not a valid semantic version string.' {
+            $semVerString = '1.2.3-alpha..test+build'
+
+            {New-SemanticVersion -String $semVerString} | Should Throw
+        }
+
+        It 'Throws without input' {
+            {New-SemanticVersion $null} | Should Throw
         }
     }
 
@@ -182,24 +184,6 @@ InModuleScope $moduleName {
             $propertyNames -contains 'Precedence' | Should Be $true
             $propertyNames -contains 'DifferenceVersion' | Should Be $true
             $propertyNames -contains 'IsCompatible' | Should Be $true
-        }
-
-        It 'Calls the ReferenceVersion object''s CompareTo() method to set the Precedence property.' {
-            $semver1 = New-SemanticVersion '1.2.3'
-            $semver2 = New-SemanticVersion '1.2.4'
-
-            $compareOutput = Compare-SemanticVersion -ReferenceVersion $semver1 -DifferenceVersion $semver2
-
-            $compareOutput.Precedence | Should Be '<'
-        }
-
-        It 'Calls the ReferenceVersion object''s CompatibleWith() method to set the IsCompatible property.' {
-            $semver1 = New-SemanticVersion '1.2.3'
-            $semver2 = New-SemanticVersion '1.2.4'
-
-            $compareOutput = Compare-SemanticVersion -ReferenceVersion $semver1 -DifferenceVersion $semver2
-
-            $compareOutput.IsCompatible | Should Be $true
         }
 
         Context 'When the ReferenceVersion has equal precedence to the DifferenceVersion' {
@@ -551,9 +535,10 @@ InModuleScope $moduleName {
             It 'Increments PreRelease Patch using label' {(Step-SemanticVersion 1.1.1-0 PrePatch alpha       ).ToString()   | Should Be '1.1.2-alpha'  }
             It 'Increments PreRelease Minor using label' {(Step-SemanticVersion 1.1.1-0 PreMinor alpha       ).ToString()   | Should Be '1.2.0-alpha'  }
             It 'Increments PreRelease Major using label' {(Step-SemanticVersion 1.1.1-0 PreMajor alpha       ).ToString()   | Should Be '2.0.0-alpha'  }
-            It 'Increments Patch ignoring the label'     {(Step-SemanticVersion 1.1.1-0 Patch alpha          ).ToString()   | Should Be '1.1.1'        }
-            It 'Increments Minor ignoring the label'     {(Step-SemanticVersion 1.1.1-0 Minor alpha          ).ToString()   | Should Be '1.2.0'        }
-            It 'Increments Major ignoring the label'     {(Step-SemanticVersion 1.1.1-0 Major alpha          ).ToString()   | Should Be '2.0.0'        }
+            # Redirected warning output to hide the warnings just for these tests.
+            It 'Increments Patch ignoring the label'     {(Step-SemanticVersion 1.1.1-0 Patch alpha 3>$null  ).ToString()   | Should Be '1.1.1'        }
+            It 'Increments Minor ignoring the label'     {(Step-SemanticVersion 1.1.1-0 Minor alpha 3>$null  ).ToString()   | Should Be '1.2.0'        }
+            It 'Increments Major ignoring the label'     {(Step-SemanticVersion 1.1.1-0 Major alpha 3>$null  ).ToString()   | Should Be '2.0.0'        }
         }
 
         Context 'Incrementing Build using label' {
@@ -561,209 +546,6 @@ InModuleScope $moduleName {
             It 'Increments Build using label'          {(Step-SemanticVersion 1.1.1+0 Build alpha   ).ToString() | Should Be '1.1.1+alpha'  }
             It 'Increments label of higher precedence' {(Step-SemanticVersion 1.1.1+alpha Build beta).ToString() | Should Be '1.1.1+beta'   }
             It 'Increments label of lower precedence'  {(Step-SemanticVersion 1.1.1+beta Build alpha).ToString() | Should Be '1.1.1+alpha'  }
-        }
-    }
-
-    Describe '(output object).CompareTo(value) method' {
-        Context 'The current version has the same precedence as value' {
-            It 'Returns 0 if two versions are the same' {
-                $semver1 = New-SemanticVersion -String '1.2.3-4+5'
-                $semver2 = New-SemanticVersion -String '1.2.3-4+5'
-
-                $semver1.CompareTo($semver2) | Should Be 0
-            }
-
-            It 'Returns 0 if two versions differ only in build metadata' {
-                $semver1 = New-SemanticVersion -String '1.2.3-4+5'
-                $semver2 = New-SemanticVersion -String '1.2.3-4'
-
-                $semver1.CompareTo($semver2) | Should Be 0
-
-                $semver1 = New-SemanticVersion -String '1.2.3-4+5'
-                $semver2 = New-SemanticVersion -String '1.2.3-4+exp.sha.5114f85'
-
-                $semver1.CompareTo($semver2) | Should Be 0
-            }
-        }
-
-        Context 'The current version has higher precedence as value' {
-            It 'Returns value greater than 0 if object has higher precedance than compared version' {
-                $semver1 = New-SemanticVersion -String '0.0.2'
-                $semver2 = New-SemanticVersion -String '0.0.1'
-
-                $semver1.CompareTo($semver2) | Should BeGreaterThan 0
-
-                $semver1 = New-SemanticVersion -String '0.1.0'
-                $semver2 = New-SemanticVersion -String '0.0.1'
-
-                $semver1.CompareTo($semver2) | Should BeGreaterThan 0
-
-                $semver1 = New-SemanticVersion -String '1.0.0'
-                $semver2 = New-SemanticVersion -String '0.0.1'
-
-                $semver1.CompareTo($semver2) | Should BeGreaterThan 0
-
-                $semver1 = New-SemanticVersion -String '1.0.0'
-                $semver2 = New-SemanticVersion -String '0.1.0'
-
-                $semver1.CompareTo($semver2) | Should BeGreaterThan 0
-
-                $semver1 = New-SemanticVersion -String '2.0.0'
-                $semver2 = New-SemanticVersion -String '1.0.0'
-
-                $semver1.CompareTo($semver2) | Should BeGreaterThan 0
-
-                $semver1 = New-SemanticVersion -String '1.0.0'
-                $semver2 = New-SemanticVersion -String '1.0.0-0'
-
-                $semver1.CompareTo($semver2) | Should BeGreaterThan 0
-
-                $semver1 = New-SemanticVersion -String '1.0.0-1'
-                $semver2 = New-SemanticVersion -String '1.0.0-0'
-
-                $semver1.CompareTo($semver2) | Should BeGreaterThan 0
-
-                $semver1 = New-SemanticVersion -String '1.0.0-11'
-                $semver2 = New-SemanticVersion -String '1.0.0-2'
-
-                $semver1.CompareTo($semver2) | Should BeGreaterThan 0
-
-                $semver1 = New-SemanticVersion -String '1.0.0-a'
-                $semver2 = New-SemanticVersion -String '1.0.0-0'
-
-                $semver1.CompareTo($semver2) | Should BeGreaterThan 0
-
-                $semver1 = New-SemanticVersion -String '1.0.0-a'
-                $semver2 = New-SemanticVersion -String '1.0.0-0.0'
-
-                $semver1.CompareTo($semver2) | Should BeGreaterThan 0
-            }
-        }
-
-        Context 'The current version has lower precedence as value' {
-            It 'Returns value less than 0 if object has lower precedance than compared version' {
-                $semver1 = New-SemanticVersion -String '0.0.1'
-                $semver2 = New-SemanticVersion -String '0.0.2'
-
-                $semver1.CompareTo($semver2) | Should BeLessThan 0
-
-                $semver1 = New-SemanticVersion -String '0.0.1'
-                $semver2 = New-SemanticVersion -String '0.1.0'
-
-                $semver1.CompareTo($semver2) | Should BeLessThan 0
-
-                $semver1 = New-SemanticVersion -String '0.0.1'
-                $semver2 = New-SemanticVersion -String '1.0.0'
-
-                $semver1.CompareTo($semver2) | Should BeLessThan 0
-
-                $semver1 = New-SemanticVersion -String '0.1.0'
-                $semver2 = New-SemanticVersion -String '1.0.0'
-
-                $semver1.CompareTo($semver2) | Should BeLessThan 0
-
-                $semver1 = New-SemanticVersion -String '1.0.0'
-                $semver2 = New-SemanticVersion -String '2.0.0'
-
-                $semver1.CompareTo($semver2) | Should BeLessThan 0
-
-                $semver1 = New-SemanticVersion -String '1.0.0-0'
-                $semver2 = New-SemanticVersion -String '1.0.0'
-
-                $semver1.CompareTo($semver2) | Should BeLessThan 0
-
-                $semver1 = New-SemanticVersion -String '1.0.0-0'
-                $semver2 = New-SemanticVersion -String '1.0.0-1'
-
-                $semver1.CompareTo($semver2) | Should BeLessThan 0
-
-                $semver1 = New-SemanticVersion -String '1.0.0-2'
-                $semver2 = New-SemanticVersion -String '1.0.0-11'
-
-                $semver1.CompareTo($semver2) | Should BeLessThan 0
-
-                $semver1 = New-SemanticVersion -String '1.0.0-0'
-                $semver2 = New-SemanticVersion -String '1.0.0-a'
-
-                $semver1.CompareTo($semver2) | Should BeLessThan 0
-
-                $semver1 = New-SemanticVersion -String '1.0.0-0.0'
-                $semver2 = New-SemanticVersion -String '1.0.0-a'
-
-                $semver1.CompareTo($semver2) | Should BeLessThan 0
-            }
-        }
-    }
-
-    Describe '(output object).CompatibleWith(value) method' {
-        It 'Returns true if two versions are compatible' {
-            $semver1 = New-SemanticVersion '1.2.3-4+5'
-            $semver2 = New-SemanticVersion '1.2.3-4+5'
-
-            $semver1.CompatibleWith($semver2) | Should Be $true
-
-            $semver1 = New-SemanticVersion '1.2.3-4+5'
-            $semver2 = New-SemanticVersion '1.2.3-4+6.7.8.9'
-
-            $semver1.CompatibleWith($semver2) | Should Be $true
-        }
-
-        It 'Returns false if two versions are are not compatible' {
-            $semver1 = New-SemanticVersion '1.2.3+5'
-            $semver2 = New-SemanticVersion '2.2.3+5'
-
-            $semver1.CompatibleWith($semver2) | Should Be $false
-
-            $semver1 = New-SemanticVersion '0.0.1+5'
-            $semver2 = New-SemanticVersion '0.0.2+5'
-
-            $semver1.CompatibleWith($semver2) | Should Be $false
-
-            $semver1 = New-SemanticVersion '1.2.3-4+5'
-            $semver2 = New-SemanticVersion '1.2.3-5+5'
-
-            $semver1.CompatibleWith($semver2) | Should Be $false
-
-            $semver1 = New-SemanticVersion '1.2.3-4+5'
-            $semver2 = New-SemanticVersion '1.2.4-4+5'
-
-            $semver1.CompatibleWith($semver2) | Should Be $false
-        }
-    }
-
-    Describe '(output object).Equals(value) method' {
-        It 'Returns true if both versions have the same precedance' {
-            $semver1 = New-SemanticVersion '1.2.3-4+5'
-            $semver2 = New-SemanticVersion '1.2.3-4+5'
-
-            $semver1.Equals($semver2) | Should Be $true
-
-            $semver1 = New-SemanticVersion '1.2.3-4+5'
-            $semver2 = New-SemanticVersion '1.2.3-4+6.7.8.9'
-
-            $semver1.Equals($semver2) | Should Be $true
-        }
-
-        It 'Returns false if both versions do not have the same precedance' {
-            $semver1 = New-SemanticVersion '1.2.3-4+5'
-            $semver2 = New-SemanticVersion '1.2.3-5+5'
-
-            $semver1.Equals($semver2) | Should Be $false
-
-            $semver1 = New-SemanticVersion '1.2.3-5+5'
-            $semver2 = New-SemanticVersion '1.2.4-5+5'
-
-            $semver1.Equals($semver2) | Should Be $false
-
-            $semver1 = New-SemanticVersion '1.3.3-5+5'
-            $semver2 = New-SemanticVersion '1.2.3-5+5'
-
-            $semver1.Equals($semver2) | Should Be $false
-
-            $semver1 = New-SemanticVersion '1.2.3-5+5'
-            $semver2 = New-SemanticVersion '2.2.3-5+5'
-
-            $semver1.Equals($semver2) | Should Be $false
         }
     }
 }
