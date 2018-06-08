@@ -1,6 +1,46 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Types>
   <Type>
+    <Name>System.Management.Automation.SemanticVersion</Name>
+    <Members>
+      <ScriptMethod>
+        <Name>Increment</Name>
+        <Script>
+            [OutputType([System.Management.Automation.SemanticVersion])]
+            param (
+                [Parameter(Position=0)]
+                [ValidateSet('Build', 'PreRelease', 'PrePatch', 'PreMinor', 'PreMajor', 'Patch', 'Minor', 'Major')]
+                [string]
+                $Level = 'PreRelease',
+
+                [Parameter(Position=1)]
+                [string]
+                $Label
+            )
+
+            $splatParams = @{
+                InputObject = $this
+                Type = $Level
+            }
+
+            if ($PSBoundParameters.ContainsKey('Label')) {
+                $splatParams['Label'] = $Label
+            }
+
+            Step-SemanticVersion @splatParams
+        </Script>
+      </ScriptMethod>
+      <AliasProperty>
+        <Name>PreRelease</Name>
+        <ReferencedMemberName>PreReleaseLabel</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>Build</Name>
+        <ReferencedMemberName>BuildLabel</ReferencedMemberName>
+      </AliasProperty>
+    </Members>
+  </Type>
+  <Type>
     <Name>PoshSemanticVersion</Name>
     <Members>
       <MemberSet>

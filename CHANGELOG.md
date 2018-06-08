@@ -5,13 +5,18 @@ This project adheres to [Semantic Versioning](http://semver.org/) for
 official project tracking. For technical reasons, the module version
 number cannot be expressed using Semantic Versioning.
 
-## 2.0.0-0 - Unreleased
+## 2.0.0-0001 - Unreleased
 
 ### Changes
 
 - Module updated to support PowerShell v6 and its built-in SemanticVersion type.
 - New-SemanticVersion: Outputs System.Management.Automation.SemanticVersion instead of custom type.
 - Step-SemanticVersion: Outputs System.Management.Automation.SemanticVersion instead of custom type.
+- Added Increment() script method to built-in SemanticVersion type.
+
+### Fixes
+
+- Fixed Step-SemanticVersion so it can accept multiple pipeline objects.
 
 ## 1.5.1 - 2018-03-26
 

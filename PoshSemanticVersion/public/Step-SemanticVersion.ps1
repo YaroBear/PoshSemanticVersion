@@ -103,28 +103,33 @@ function Step-SemanticVersion {
         $Label
     )
 
-    $newSemVer = New-SemVerObject -InputObject $InputObject
+    process {
+        $newSemVer = New-SemVerObject -InputObject $InputObject
 
-    if ($PSBoundParameters.ContainsKey('Label')) {
-        try {
-            $newSemVer.Increment($Type, $Label)
+        if ($PSBoundParameters.ContainsKey('Label')) {
+            try {
+                $newSemVer.Increment($Type, $Label)
+            }
+            catch [System.ArgumentOutOfRangeException],[System.ArgumentException] {
+                $ex = $_.Exception
+                $er = [System.Management.Automation.ErrorRecord]::new($ex, 'InvalidSemVer', ([System.Management.Automation.ErrorCategory]::InvalidArgument), $InputObject)
+                $PSCmdlet.ThrowTerminatingError($er)
+            }
+            catch {
+                $ex = $_.Exception
+                $er = [System.Management.Automation.ErrorRecord]::new($ex, 'InvalidSemVerLabel', ([System.Management.Automation.ErrorCategory]::InvalidArgument), $InputObject)
+                $er.ErrorDetails = [System.Management.Automation.ErrorDetails]::new(('Error using label "{0}" when incrementing version "{1}".' -f $Label, $InputObject.ToString()))
+                $PSCmdlet.ThrowTerminatingError($er)
+            }
         }
-        catch [System.ArgumentOutOfRangeException],[System.ArgumentException] {
-            $er = Write-Error -Exception $_.Exception -Category InvalidArgument -TargetObject $InputObject 2>&1
-            $PSCmdlet.ThrowTerminatingError($er)
+        else {
+            $newSemVer.Increment($Type)
         }
-        catch {
-            $er = Write-Error -Exception $_.Exception -Message ('Error using label "{0}" when incrementing version "{1}".' -f $Label, $InputObject.ToString()) -TargetObject $InputObject 2>&1
-            $PSCmdlet.ThrowTerminatingError($er)
-        }
-    }
-    else {
-        $newSemVer.Increment($Type)
-    }
 
-    #BUG: PowerShell SemanticVersion implementation does not parse a semver string that has a build label
-    # without a pre-release label.
-    [System.Management.Automation.SemanticVersion]::new($newSemVer.Major, $newSemVer.Minor, $newSemVer.Patch, (@($newSemVer.PreRelease) -join '.'), (@($newSemVer.Build) -join '.'))
+        #BUG: PowerShell SemanticVersion implementation does not parse a semver string that has a build label
+        # without a pre-release label.
+        [System.Management.Automation.SemanticVersion]::new($newSemVer.Major, $newSemVer.Minor, $newSemVer.Patch, (@($newSemVer.PreRelease) -join '.'), (@($newSemVer.Build) -join '.'))
+    }
 }
 
 
